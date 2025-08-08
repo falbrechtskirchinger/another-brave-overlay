@@ -65,6 +65,6 @@ License
 
 Ebuilds in this overlay are licensed under the GNU General Public License v2.0 (GPL-2). Scripts and other files are licensed under the MIT License (MIT).
 
-See the LICENSE.GPL-2 and LICENSE.MIT files in the repository for full details.
+See the `LICENSE.GPL-2` and `LICENSE.MIT` files in the repository for full details.
 
 **Trademark Notice**: All Brave logos, marks, and designations are trademarks or registered trademarks of Brave Software, Inc.
