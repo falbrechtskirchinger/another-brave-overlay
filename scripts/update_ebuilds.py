@@ -206,12 +206,12 @@ def main():
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
             f.write("### 🚀 Update Ebuilds Results\n\n")
 
-        if new_ebuilds:
-            f.write("✨ New ebuilds were added:\n\n")
-            for key, ebuild in new_ebuilds.items():
-                f.write(f"- **{key.capitalize()}**: `{ebuild}`\n")
-        else:
-            f.write("✅ No new releases were found.\n")
+            if new_ebuilds:
+                f.write("✨ New ebuilds were added:\n\n")
+                for key, ebuild in new_ebuilds.items():
+                    f.write(f"- **{key.capitalize()}**: `{ebuild}`\n")
+            else:
+                f.write("✅ No new releases were found.\n")
 
 
 if __name__ == "__main__":
