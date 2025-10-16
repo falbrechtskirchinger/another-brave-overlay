@@ -15,4 +15,7 @@
   <upstream>
     <remote-id type="github">brave/brave-browser</remote-id>
   </upstream>
+<use>
+  <flag name="verify-sig">Verify the release checksum using Brave’s OpenPGP signature</flag>
+</use>
 </pkgmetadata>

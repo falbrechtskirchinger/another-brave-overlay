@@ -7,7 +7,7 @@ CHROMIUM_LANGS="af am ar az bg bn ca cs da de el en-GB en-US es-419 es et fa fi 
 	gu he hi hr hu id it ja ka kk km kn ko lo lt lv mk ml mn mr ms my nb nl pl pt-BR
 	pt-PT ro ru si sk sl sq sr-Latn sr sv sw ta te th tr uk ur uz vi zh-CN zh-TW"
 
-inherit brave chromium-2 desktop pax-utils unpacker xdg
+inherit brave chromium-2 desktop pax-utils unpacker xdg verify-sig
 
 DESCRIPTION="The Brave Web Browser"
 HOMEPAGE="https://brave.com/"
@@ -18,16 +18,29 @@ else
 	MY_PN=${PN}
 fi
 
-SRC_URI="https://github.com/brave/brave-browser/releases/download/v${PV}/${PN}_${PV}_amd64.deb"
+DEB=${PN}_${PV}_amd64.deb
+DEB_SUM=${DEB}.sha256
+SUM_SIG=${DEB_SUM}.asc
+SRC_URI="
+	https://github.com/brave/brave-browser/releases/download/v${PV}/${PN}_${PV}_amd64.deb
+	verify-sig? (
+		https://github.com/brave/brave-browser/releases/download/v${PV}/${SUM_SIG}
+		https://github.com/brave/brave-browser/releases/download/v${PV}/${DEB_SUM} )
+"
 S=${WORKDIR}
 
 LICENSE="MPL-2.0"
 SLOT="0"
 KEYWORDS="-* amd64"
 
-IUSE="qt6 selinux"
+IUSE="qt6 selinux verify-sig"
 
 RESTRICT="bindist mirror strip"
+
+BDEPEND="
+  verify-sig? ( app-crypt/gnupg )
+"
+
 
 RDEPEND="
 	>=app-accessibility/at-spi2-core-2.46.0:2
@@ -64,11 +77,14 @@ RDEPEND="
 	x11-misc/xdg-utils
 	qt6? ( dev-qt/qtbase:6[gui,widgets] )
 	selinux? ( sec-policy/selinux-chromium )
+        verify-sig? ( sec-keys/openpgp-keys-brave )
 "
 
 QA_PREBUILT="*"
 QA_DESKTOP_FILE="usr/share/applications/brave-browser.*\\.desktop"
 BRAVE_HOME="opt/brave.com/brave${PN#brave-browser}"
+VERIFY_SIG_OPENPGP_KEY_PATH="/usr/share/openpgp-keys/brave-browser.asc"
+
 
 pkg_pretend() {
 	# Protect against people using autounmask overzealously
@@ -80,7 +96,18 @@ pkg_setup() {
 }
 
 src_unpack() {
-	:
+	if use verify-sig; then
+		cd "${DISTDIR}" || die
+		# 1) verify detached sig on checksum
+		verify-sig_verify_detached "${DEB_SUM}" "${SUM_SIG}"
+		# 2) normalize checksum to "<hash><2 spaces><filename>\n"
+		local want
+		want=$(awk '{print $1}' "${DEB_SUM}") || die "failed reading ${DEB_SUM}"
+		printf '%s  %s\n' "${want}" "${DEB}" > "${T}/sum.sha256" || die
+		# 3) verify zip against normalized checksum
+		verify-sig_verify_unsigned_checksums "${T}/sum.sha256" sha256 "${DEB}"
+		cd "${WORKDIR}" || die
+	fi
 }
 
 src_install() {
