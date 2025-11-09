@@ -7,7 +7,7 @@ CHROMIUM_LANGS="af am ar az bg bn ca cs da de el en-GB en-US es-419 es et fa fi 
 	gu he hi hr hu id it ja ka kk km kn ko lo lt lv mk ml mn mr ms my nb nl pl pt-BR
 	pt-PT ro ru si sk sl sq sr-Latn sr sv sw ta te th tr uk ur uz vi zh-CN zh-TW"
 
-inherit brave chromium-2 desktop pax-utils unpacker xdg
+inherit brave chromium-2 desktop pax-utils unpacker verify-sig xdg
 
 DESCRIPTION="The Brave Web Browser"
 HOMEPAGE="https://brave.com/"
@@ -18,7 +18,14 @@ else
 	MY_PN=${PN}
 fi
 
-SRC_URI="https://github.com/brave/brave-browser/releases/download/v${PV}/${PN}_${PV}_amd64.deb"
+DEB="${PN}_${PV}_amd64.deb"
+SRC_URI="
+	https://github.com/brave/brave-browser/releases/download/v${PV}/${DEB}
+	verify-sig? (
+		https://github.com/brave/brave-browser/releases/download/v${PV}/${DEB}.sha256
+		https://github.com/brave/brave-browser/releases/download/v${PV}/${DEB}.sha256.asc
+	)
+"
 S=${WORKDIR}
 
 LICENSE="MPL-2.0"
@@ -66,6 +73,14 @@ RDEPEND="
 	selinux? ( sec-policy/selinux-chromium )
 "
 
+if [[ ${PN} == brave-browser ]]; then
+	BDEPEND="verify-sig? ( >=sec-keys/openpgp-keys-brave-browser-release-20250709 )"
+	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/brave-browser-release.asc
+else
+	BDEPEND="verify-sig? ( >=sec-keys/openpgp-keys-brave-browser-pre-release-20250709 )"
+	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/brave-browser-pre-release.asc
+fi
+
 QA_PREBUILT="*"
 QA_DESKTOP_FILE="usr/share/applications/brave-browser.*\\.desktop"
 BRAVE_HOME="opt/brave.com/brave${PN#brave-browser}"
@@ -80,7 +95,15 @@ pkg_setup() {
 }
 
 src_unpack() {
-	:
+	if use verify-sig; then
+		pushd "${DISTDIR}" > /dev/null || die
+		verify-sig_verify_detached "${DEB}.sha256"{,.asc}
+		{ cat "${DEB}.sha256"; echo; } | \
+			verify-sig_verify_unsigned_checksums - sha256 "${DEB}"
+		popd > /dev/null || die
+	fi
+
+	default
 }
 
 src_install() {
