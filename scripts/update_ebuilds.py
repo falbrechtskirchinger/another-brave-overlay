@@ -103,6 +103,14 @@ def update_manifest(ebuild_dir, name):
                     # Keep DIST lines for current ebuilds
                     new_lines.append(line)
                     versions_in_manifest.add(sources_by_filename[parts[1]]["version"])
+                elif parts[1].endswith(".sha256"):
+                    # Keep DIST lines for associated checksum files
+                    if parts[1][:-len(".sha256")] in sources_by_filename:
+                        new_lines.append(line)
+                elif parts[1].endswith(".sha256.asc"):
+                    # Keep DIST lines for associated checksum signature files
+                    if parts[1][:-len(".sha256.asc")] in sources_by_filename:
+                        new_lines.append(line)
             else:
                 new_lines.append(line)
 
