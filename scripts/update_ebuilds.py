@@ -106,12 +106,11 @@ def update_manifest(ebuild_dir, name):
             else:
                 new_lines.append(line)
 
-    # Add DIST lines for new ebuilds
-    for version in versions - versions_in_manifest:
-        source = sources_by_version[version]
+
+    def add_hash(url, filename):
         hashers = {algo: hashlib.new(algo.lower()) for algo in MANIFEST_HASH_ALGOS}
         size = 0
-        with requests.get(source["url"], stream=True, timeout=300) as r:
+        with requests.get(url, stream=True, timeout=300) as r:
             r.raise_for_status()
             for chunk in r.iter_content(chunk_size=8192):
                 size += len(chunk)
@@ -120,8 +119,15 @@ def update_manifest(ebuild_dir, name):
 
         digests = {algo: hasher.hexdigest() for algo, hasher in hashers.items()}
         new_lines.append(
-            f"DIST {source['file']} {size} {' '.join([f'{algo} {digest}' for algo, digest in digests.items()])}\n"
+            f"DIST {filename} {size} {' '.join([f'{algo} {digest}' for algo, digest in digests.items()])}\n"
         )
+
+    # Add DIST lines for new ebuilds
+    for version in versions - versions_in_manifest:
+        source = sources_by_version[version]
+        add_hash(source["url"], source["file"])
+        add_hash(source["url"] + ".sha256", source["file"] + ".sha256")
+        add_hash(source["url"] + ".sha256.asc", source["file"] + ".sha256.asc")
 
     with open(os.path.join(ebuild_dir, "Manifest"), "w") as f:
         f.writelines(new_lines)
