@@ -1,0 +1,6 @@
+# Florian Albrechtskirchinger <falbrechtskirchinger@gmail.com> (2025-11-18)
+# Temporary signing keys cause verification failures.
+# Fix requires tooling changes. Expected in Q1 2026.
+www-client/brave-browser verify-sig
+www-client/brave-browser-beta verify-sig
+www-client/brave-browser-nightly verify-sig
