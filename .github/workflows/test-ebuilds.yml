@@ -81,15 +81,8 @@ jobs:
         with:
           ref: ${{ needs.build-matrix.outputs.commit_hash }}
 
-      - name: Install sec-keys
-        run: |
-          PRE_RELEASE_EBUILD=$(ls -v1 sec-keys/openpgp-keys-brave-browser-pre-release/*.ebuild | tail -n1)
-          RELEASE_EBUILD=$(ls -v1 sec-keys/openpgp-keys-brave-browser-release/*.ebuild | tail -n1)
-          ebuild "${PRE_RELEASE_EBUILD}" merge
-          ebuild "${RELEASE_EBUILD}" merge
-
       - name: Merge ebuild
-        run: USE=verify-sig ebuild ${{ matrix.ebuild_path }} merge
+        run: ebuild ${{ matrix.ebuild_path }} merge
 
   collect-results:
     name: Collect test results
