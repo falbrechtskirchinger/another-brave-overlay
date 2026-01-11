@@ -1,0 +1,3 @@
+# Florian Albrechtskirchinger <falbrechtskirchinger@gmail.com> (2026-01-11)
+# Masking due to upstream packaging issue
+=www-client/brave-browser-1.86.135
