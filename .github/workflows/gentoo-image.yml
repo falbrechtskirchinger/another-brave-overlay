@@ -87,7 +87,7 @@ jobs:
     secrets: inherit
 
   cleanup-ghcr:
-    name: Clean up old image tags
+    name: Clean up images
     needs: [run-initial-build, run-update-build]
     if: always()
     runs-on: ubuntu-latest
@@ -96,10 +96,18 @@ jobs:
       contents: read
 
     steps:
-      - name: Delete old container versions
+      - name: Delete untagged images
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ github.event.repository.name }}
+          package-type: 'container'
+          delete-only-untagged-versions: true
+          min-versions-to-keep: 0
+
+      - name: Delete out-dated images
         uses: actions/delete-package-versions@v5
         with:
           package-name: ${{ github.event.repository.name }}
           package-type: 'container'
           min-versions-to-keep: 3
-          delete-tags: '*-step'
+          ignore-versions: '^(latest|.*-step)$'
