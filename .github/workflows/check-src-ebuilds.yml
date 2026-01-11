@@ -5,6 +5,9 @@
 name: 🔍 Gentoo Divergence Check
 
 on:
+  push:
+    paths:
+      - "src_ebuilds/**"
   schedule:
     - cron: '44 4 * * *'
   workflow_dispatch:
