@@ -119,7 +119,7 @@ src_install() {
 	rm -r "${BRAVE_HOME}"/cron || die "Failed to remove cron scripts"
 
 	gzip -d usr/share/doc/${PF}/changelog.gz || die
-	gzip -d usr/share/man/man1/${PN}.1.gz || die
+	gzip -d usr/share/man/man1/${MY_PN}.1.gz || die
 	if [[ -L usr/share/man/man1/brave-browser.1.gz ]]; then
 		rm usr/share/man/man1/brave-browser.1.gz || die
 		dosym ${MY_PN}.1 usr/share/man/man1/brave-browser.1
