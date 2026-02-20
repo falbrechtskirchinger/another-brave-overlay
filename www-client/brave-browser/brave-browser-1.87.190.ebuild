@@ -128,6 +128,8 @@ src_install() {
 		dosym ${MY_PN}.1 usr/share/man/man1/brave-browser.1
 	fi
 
+	mv usr/share/{appdata,metainfo}/ || die
+
 	pushd "${BRAVE_HOME}/locales" > /dev/null || die
 	chromium_remove_language_paks
 	popd > /dev/null || die
