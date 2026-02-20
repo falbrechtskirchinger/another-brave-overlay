@@ -103,13 +103,13 @@ src_unpack() {
 		popd > /dev/null || die
 	fi
 
-	default
+	unpacker
 }
 
 src_install() {
 	dodir /
 	cd "${ED}" || die
-	unpacker
+	mv "${S}"/* . || die
 
 	mv usr/share/doc/${PN} usr/share/doc/${PF} || die
 	if [[ -d usr/share/doc/${MY_PN} ]]; then
