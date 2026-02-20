@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: Copyright 2025 Florian Albrechtskirchinger <falbrechtskirchinger@gmail.com>
+# SPDX-FileCopyrightText: Copyright 2025-2026 Florian Albrechtskirchinger <falbrechtskirchinger@gmail.com>
 #
 # SPDX-License-Identifier: MIT
 
@@ -40,6 +40,9 @@ def get_latest_releases():
     while url and page < MAX_PAGES:
         response = gh_get(url)
         for release in response.json():
+            if release["prerelease"]:
+                continue
+
             for channel, title in CHANNELS_WITH_TITLE:
                 if not releases[channel] and release["name"].startswith(title):
                     tag = release["tag_name"]
