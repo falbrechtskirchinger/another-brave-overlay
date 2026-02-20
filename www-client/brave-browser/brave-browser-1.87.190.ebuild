@@ -112,6 +112,9 @@ src_install() {
 	unpacker
 
 	mv usr/share/doc/${PN} usr/share/doc/${PF} || die
+	if [[ -d usr/share/doc/${MY_PN} ]]; then
+		rmdir usr/share/doc/${MY_PN} || die
+	fi
 
 	# Since M141 Chromium comes with its own bundled cron
 	# scripts which invoke `apt` directly. Useless on Gentoo!
