@@ -20,7 +20,7 @@ jobs:
     steps:
       - name: Checkout repository
         if:  env.GMAIL_SECRET_IS_SET == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Send test email
         if:  env.GMAIL_SECRET_IS_SET == 'true' && github.event_name == 'workflow_dispatch'

@@ -51,7 +51,7 @@ jobs:
 
       - name: Checkout repository
         if: steps.download.outcome != 'failure'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ steps.resolve-refs.outputs.commit_hash }}
           fetch-depth: 4
@@ -86,7 +86,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.build-matrix.outputs.commit_hash }}
 
@@ -103,7 +103,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Collect and cache test results
         id: collect-test-results
@@ -124,7 +124,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.build-matrix.outputs.branch_name }}
 
