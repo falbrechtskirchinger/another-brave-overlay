@@ -23,8 +23,9 @@ from shared import (
     require_gha,
 )
 
+ARCHES = ("amd64", "arm64")
 BRAVE_RELEASES = "https://api.github.com/repos/brave/brave-browser/releases"
-BRAVE_SOURCE_FILE = "{name}_{version}_amd64.deb"
+BRAVE_SOURCE_FILE = "{name}_{version}_{arch}.deb"
 BRAVE_SOURCE_URL = f"https://github.com/brave/brave-browser/releases/download/v{{version}}/{BRAVE_SOURCE_FILE}"
 EBUILD_FILE = "{name}-{version}.ebuild"
 EBUILD_FILE_PATH = f"www-client/{{name}}/{EBUILD_FILE}"
@@ -62,9 +63,12 @@ def get_latest_releases():
                     version = tag[1:]
 
                     name = make_name_from_channel(channel)
-                    source_file = BRAVE_SOURCE_FILE.format(name=name, version=version)
+                    required_assets = {
+                        BRAVE_SOURCE_FILE.format(name=name, version=version, arch=arch)
+                        for arch in ARCHES
+                    }
                     asset_files = {asset["name"] for asset in release["assets"]}
-                    if source_file in asset_files:
+                    if required_assets.issubset(asset_files):
                         releases[channel] = tag[1:]
                         releases_found += 1
 
@@ -97,17 +101,17 @@ def get_new_releases(releases, repo_dir=None):
 def update_manifest(ebuild_dir, name):
     ebuilds = glob.glob(os.path.join(ebuild_dir, "*.ebuild"))
     versions = set(extract_version(ebuild) for ebuild in ebuilds)
-    versions_in_manifest = set()
+    files_in_manifest = set()
     sources = [
         {
-            "file": BRAVE_SOURCE_FILE.format(name=name, version=version),
-            "url": BRAVE_SOURCE_URL.format(name=name, version=version),
+            "file": BRAVE_SOURCE_FILE.format(name=name, version=version, arch=arch),
+            "url": BRAVE_SOURCE_URL.format(name=name, version=version, arch=arch),
             "version": version,
         }
         for version in versions
+        for arch in ARCHES
     ]
     sources_by_filename = {source["file"]: source for source in sources}
-    sources_by_version = {source["version"]: source for source in sources}
     with open(os.path.join(ebuild_dir, "Manifest"), "r") as f:
         lines = f.readlines()
         new_lines = []
@@ -117,7 +121,7 @@ def update_manifest(ebuild_dir, name):
                 if parts[1] in sources_by_filename:
                     # Keep DIST lines for current ebuilds
                     new_lines.append(line)
-                    versions_in_manifest.add(sources_by_filename[parts[1]]["version"])
+                    files_in_manifest.add(parts[1])
                 elif parts[1].endswith(".sha256"):
                     # Keep DIST lines for associated checksum files
                     if parts[1][:-len(".sha256")] in sources_by_filename:
@@ -145,12 +149,12 @@ def update_manifest(ebuild_dir, name):
             f"DIST {filename} {size} {' '.join([f'{algo} {digest}' for algo, digest in digests.items()])}\n"
         )
 
-    # Add DIST lines for new ebuilds
-    for version in versions - versions_in_manifest:
-        source = sources_by_version[version]
-        add_hash(source["url"], source["file"])
-        add_hash(source["url"] + ".sha256", source["file"] + ".sha256")
-        add_hash(source["url"] + ".sha256.asc", source["file"] + ".sha256.asc")
+    # Add DIST lines for missing files
+    for source in sources:
+        if source["file"] not in files_in_manifest:
+            add_hash(source["url"], source["file"])
+            add_hash(source["url"] + ".sha256", source["file"] + ".sha256")
+            add_hash(source["url"] + ".sha256.asc", source["file"] + ".sha256.asc")
 
     with open(os.path.join(ebuild_dir, "Manifest"), "w") as f:
         f.writelines(new_lines)
