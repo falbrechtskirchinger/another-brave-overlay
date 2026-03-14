@@ -27,7 +27,7 @@ jobs:
       - name: Download commit hash
         id: download
         if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: commit_hash
