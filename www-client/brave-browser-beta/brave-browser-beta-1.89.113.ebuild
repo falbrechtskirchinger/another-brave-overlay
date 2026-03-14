@@ -7,7 +7,7 @@ CHROMIUM_LANGS="af am ar az bg bn ca cs da de el en-GB en-US es-419 es et fa fi 
 	gu he hi hr hu id it ja ka kk km kn ko lo lt lv mk ml mn mr ms my nb nl pl pt-BR
 	pt-PT ro ru si sk sl sq sr-Latn sr sv sw ta te th tr uk ur uz vi zh-CN zh-TW"
 
-inherit brave chromium-2 desktop pax-utils unpacker verify-sig xdg
+inherit brave chromium-2 desktop eapi9-pipestatus pax-utils unpacker verify-sig xdg
 
 DESCRIPTION="The Brave Web Browser"
 HOMEPAGE="https://brave.com/"
@@ -106,6 +106,7 @@ src_unpack() {
 		verify-sig_verify_detached "${deb_file}.sha256"{,.asc}
 		{ cat "${deb_file}.sha256"; echo; } | \
 			verify-sig_verify_unsigned_checksums - sha256 "${deb_file}"
+		pipestatus || die
 		popd > /dev/null || die
 	fi
 
