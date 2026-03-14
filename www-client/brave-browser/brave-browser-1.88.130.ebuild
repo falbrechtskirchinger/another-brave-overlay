@@ -18,19 +18,24 @@ else
 	MY_PN=${PN}
 fi
 
-DEB="${PN}_${PV}_amd64.deb"
-SRC_URI="
-	https://github.com/brave/brave-browser/releases/download/v${PV}/${DEB}
-	verify-sig? (
-		https://github.com/brave/brave-browser/releases/download/v${PV}/${DEB}.sha256
-		https://github.com/brave/brave-browser/releases/download/v${PV}/${DEB}.sha256.asc
-	)
-"
+BASE_URI="https://github.com/brave/brave-browser/releases/download/v${PV}"
+for _arch in amd64 arm64; do
+	SRC_URI+="
+		${_arch}? (
+			${BASE_URI}/${PN}_${PV}_${_arch}.deb
+			verify-sig? (
+				${BASE_URI}/${PN}_${PV}_${_arch}.deb.sha256
+				${BASE_URI}/${PN}_${PV}_${_arch}.deb.sha256.asc
+			)
+		)
+	"
+done
+unset _arch
 S=${WORKDIR}
 
 LICENSE="MPL-2.0"
 SLOT="0"
-KEYWORDS="-* amd64"
+KEYWORDS="-* amd64 arm64"
 
 IUSE="qt6 selinux"
 
@@ -96,10 +101,11 @@ pkg_setup() {
 
 src_unpack() {
 	if use verify-sig; then
+		local deb_file="${PN}_${PV}_${ARCH}.deb"
 		pushd "${DISTDIR}" > /dev/null || die
-		verify-sig_verify_detached "${DEB}.sha256"{,.asc}
-		{ cat "${DEB}.sha256"; echo; } | \
-			verify-sig_verify_unsigned_checksums - sha256 "${DEB}"
+		verify-sig_verify_detached "${deb_file}.sha256"{,.asc}
+		{ cat "${deb_file}.sha256"; echo; } | \
+			verify-sig_verify_unsigned_checksums - sha256 "${deb_file}"
 		popd > /dev/null || die
 	fi
 
@@ -155,4 +161,9 @@ src_install() {
 	[[ ${icon_installed} -eq 0 ]] && die "No program icons could be installed."
 
 	pax-mark m "${BRAVE_HOME}/brave"
+}
+
+pkg_postinst() {
+	[[ ${ARCH} == "arm64" ]] && \
+		ewarn "Note: arm64 support is experimental for this package and is not currently tested in CI."
 }
