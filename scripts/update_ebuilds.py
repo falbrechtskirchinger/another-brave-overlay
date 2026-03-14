@@ -38,7 +38,19 @@ def get_latest_releases():
     MAX_PAGES = 5
     url = BRAVE_RELEASES
     while url and page < MAX_PAGES:
-        response = gh_get(url)
+        try:
+            response = gh_get(url)
+        except requests.exceptions.HTTPError as e:
+            res = e.response
+            if res.status_code == 403 and "rate limit exceeded" in res.text.lower():
+                limit = res.headers.get('X-RateLimit-Limit')
+                remaining = res.headers.get('X-RateLimit-Remaining')
+                reset_time = res.headers.get('X-RateLimit-Reset')
+                print(f"Rate limit exceeded! Limit: {limit} | Remaining: {remaining} | Resets at: {reset_time}")
+                break
+            else:
+                raise e
+
         for release in response.json():
             if release["prerelease"]:
                 continue

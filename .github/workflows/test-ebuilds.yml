@@ -25,8 +25,10 @@ jobs:
 
     steps:
       - name: Download commit hash
+        id: download
         if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: commit_hash
           github-token: ${{ secrets.INTEGRATION_PAT }}
@@ -35,6 +37,7 @@ jobs:
 
       - name: Resolve refs
         id: resolve-refs
+        if: steps.download.outcome != 'failure'
         run: |
           if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
             HASH="$(cat commit_hash.txt)"
@@ -47,6 +50,7 @@ jobs:
           echo "branch_name=$BRANCH" >> "$GITHUB_OUTPUT"
 
       - name: Checkout repository
+        if: steps.download.outcome != 'failure'
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.resolve-refs.outputs.commit_hash }}
@@ -55,6 +59,11 @@ jobs:
       - name: Build test matrix
         id: build-matrix
         run: |
+          if [[ "${{ steps.download.outcome }}" == "failure" ]]; then
+            echo "test_matrix=[]" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           args=(-v --build-test-matrix)
           if [[ "${{ github.event_name == 'workflow_run' }}" == "true" ]]; then
             args+=(--new-ebuilds ${{ github.event.workflow_run.head_sha }} ${{ steps.resolve-refs.outputs.commit_hash }})
@@ -88,7 +97,7 @@ jobs:
     name: Collect test results
     runs-on: ubuntu-latest
     needs: [build-matrix, test-ebuilds]
-    if: always()
+    if: always() && needs.build-matrix.outputs.has_tests == 'true'
     outputs:
       test_results: ${{ steps.collect-test-results.outputs.test_results }}
 
@@ -107,7 +116,9 @@ jobs:
     name: Prune ebuilds
     runs-on: ubuntu-latest
     needs: [build-matrix, test-ebuilds, collect-results]
-    if: contains(fromJSON(needs.collect-results.outputs.test_results).*.conclusion, 'success')
+    if: |
+      needs.collect-results.result == 'success' &&
+      contains(fromJSON(needs.collect-results.outputs.test_results).*.conclusion, 'success')
     permissions:
       contents: write
 
