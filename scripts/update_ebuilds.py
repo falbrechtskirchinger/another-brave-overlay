@@ -137,15 +137,14 @@ def update_manifest(ebuild_dir, name):
                     files_in_manifest.add(parts[1])
                 elif parts[1].endswith(".sha256"):
                     # Keep DIST lines for associated checksum files
-                    if parts[1][:-len(".sha256")] in sources_by_filename:
+                    if parts[1][: -len(".sha256")] in sources_by_filename:
                         new_lines.append(line)
                 elif parts[1].endswith(".sha256.asc"):
                     # Keep DIST lines for associated checksum signature files
-                    if parts[1][:-len(".sha256.asc")] in sources_by_filename:
+                    if parts[1][: -len(".sha256.asc")] in sources_by_filename:
                         new_lines.append(line)
             else:
                 new_lines.append(line)
-
 
     def add_hash(url, filename):
         hashers = {algo: hashlib.new(algo.lower()) for algo in MANIFEST_HASH_ALGOS}
