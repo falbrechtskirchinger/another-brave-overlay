@@ -32,6 +32,21 @@ EBUILD_FILE_PATH = f"www-client/{{name}}/{EBUILD_FILE}"
 MANIFEST_HASH_ALGOS = ("BLAKE2B", "SHA512")
 
 
+def print_rate_limit(res):
+    limit = res.headers.get("X-RateLimit-Limit")
+    remaining = res.headers.get("X-RateLimit-Remaining")
+    reset_time = res.headers.get("X-RateLimit-Reset")
+    print(f"Rate limit: {limit} | Remaining: {remaining} | Resets at: {reset_time}")
+
+
+def handle_rate_limit(res):
+    if res.status_code == 403 and "rate limit exceeded" in res.text.lower():
+        print("Rate limit exceeded!")
+        print_rate_limit(res)
+        return True
+    return False
+
+
 def get_latest_releases():
     releases = {channel: None for channel, _ in CHANNELS_WITH_TITLE}
     releases_found = 0
@@ -40,14 +55,12 @@ def get_latest_releases():
     url = BRAVE_RELEASES
     while url and page < MAX_PAGES:
         try:
+            print(f"Fetching page {page+1} of releases...")
             response = gh_get(url)
+            print_rate_limit(response)
         except requests.exceptions.HTTPError as e:
             res = e.response
-            if res.status_code == 403 and "rate limit exceeded" in res.text.lower():
-                limit = res.headers.get('X-RateLimit-Limit')
-                remaining = res.headers.get('X-RateLimit-Remaining')
-                reset_time = res.headers.get('X-RateLimit-Reset')
-                print(f"Rate limit exceeded! Limit: {limit} | Remaining: {remaining} | Resets at: {reset_time}")
+            if handle_rate_limit(res):
                 break
             else:
                 raise e
