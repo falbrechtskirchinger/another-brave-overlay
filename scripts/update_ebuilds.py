@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import subprocess
+import tempfile
 
 import requests
 from shared import (
@@ -30,6 +31,67 @@ BRAVE_SOURCE_URL = f"https://github.com/brave/brave-browser/releases/download/v{
 EBUILD_FILE = "{name}-{version}.ebuild"
 EBUILD_FILE_PATH = f"www-client/{{name}}/{EBUILD_FILE}"
 MANIFEST_HASH_ALGOS = ("BLAKE2B", "SHA512")
+
+SIGNING_KEYS = {
+    "stable": "brave-browser-release.asc",
+    "beta": "brave-browser-pre-release.asc",
+    "nightly": "brave-browser-pre-release.asc",
+}
+
+
+def verify_release_signature(channel, version, name):
+    key_file = SIGNING_KEYS.get(channel)
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    key_path = os.path.join(base_dir, "data", key_file)
+
+    sha_url = (
+        BRAVE_SOURCE_URL.format(name=name, version=version, arch="amd64") + ".sha256"
+    )
+    asc_url = sha_url + ".asc"
+
+    try:
+        print(f"Fetching checksum for {name} {version}...")
+        response_sha = gh_get(sha_url)
+        print_rate_limit(response_sha)
+
+        print(f"Fetching signature for {name} {version}...")
+        response_asc = gh_get(asc_url)
+        print_rate_limit(response_asc)
+    except requests.exceptions.HTTPError as e:
+        res = e.response
+        handle_rate_limit(res)
+        return False
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        gnupg_home = os.path.join(tmpdir, "gnupg")
+        os.makedirs(gnupg_home, mode=0o700)
+
+        sha_path = os.path.join(tmpdir, "temp.sha256")
+        asc_path = os.path.join(tmpdir, "temp.sha256.asc")
+
+        with open(sha_path, "wb") as f:
+            f.write(response_sha.content)
+        with open(asc_path, "wb") as f:
+            f.write(response_asc.content)
+
+        # Import key
+        subprocess.run(
+            ["gpg", "--homedir", gnupg_home, "--import", key_path],
+            check=True,
+            capture_output=True,
+        )
+
+        # Verify signature
+        res = subprocess.run(
+            ["gpg", "--homedir", gnupg_home, "--verify", asc_path, sha_path],
+            capture_output=True,
+        )
+
+        if res.returncode != 0:
+            print(f"Signature verification failed for {version} on channel {channel}")
+            return False
+
+        return True
 
 
 def print_rate_limit(res):
@@ -81,7 +143,9 @@ def get_latest_releases():
                         for arch in ARCHES
                     }
                     asset_files = {asset["name"] for asset in release["assets"]}
-                    if required_assets.issubset(asset_files):
+                    if required_assets.issubset(
+                        asset_files
+                    ) and verify_release_signature(channel, version, name):
                         releases[channel] = tag[1:]
                         releases_found += 1
 
