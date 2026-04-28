@@ -11,6 +11,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from datetime import datetime
 
 import requests
 from shared import (
@@ -50,16 +51,11 @@ def verify_release_signature(channel, version, name):
     asc_url = sha_url + ".asc"
 
     try:
-        print(f"Fetching checksum for {name} {version}...")
+        print(f"Fetching signature files for {name} {version}...")
         response_sha = gh_get(sha_url)
-        print_rate_limit(response_sha)
-
-        print(f"Fetching signature for {name} {version}...")
         response_asc = gh_get(asc_url)
-        print_rate_limit(response_asc)
     except requests.exceptions.HTTPError as e:
-        res = e.response
-        handle_rate_limit(res)
+        print(f"Failed to download signature files: {e}")
         return False
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -88,7 +84,7 @@ def verify_release_signature(channel, version, name):
         )
 
         if res.returncode != 0:
-            print(f"Signature verification failed for {version} on channel {channel}")
+            print(f"Signature verification failed for {name} {version}")
             return False
 
         return True
@@ -98,7 +94,17 @@ def print_rate_limit(res):
     limit = res.headers.get("X-RateLimit-Limit")
     remaining = res.headers.get("X-RateLimit-Remaining")
     reset_time = res.headers.get("X-RateLimit-Reset")
-    print(f"Rate limit: {limit} | Remaining: {remaining} | Resets at: {reset_time}")
+    if limit:
+        limit = f"Rate limit: {limit}"
+    if remaining:
+        remaining = f"Remaining: {remaining}"
+    if reset_time:
+        reset_time = datetime.fromtimestamp(int(reset_time))
+        reset_time = f"Resets at: {reset_time}"
+
+    msg = " | ".join(filter(None, (limit, remaining, reset_time)))
+    if msg:
+        print(msg)
 
 
 def handle_rate_limit(res):
