@@ -52,8 +52,8 @@ def verify_release_signature(channel, version, name):
 
     try:
         print(f"Fetching signature files for {name} {version}...")
-        response_sha = gh_get(sha_url)
-        response_asc = gh_get(asc_url)
+        response_sha = requests.get(sha_url)
+        response_asc = requests.get(asc_url)
     except requests.exceptions.HTTPError as e:
         print(f"Failed to download signature files: {e}")
         return False
