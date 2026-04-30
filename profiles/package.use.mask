@@ -1,0 +1,5 @@
+# Florian Albrechtskirchinger <falbrechtskirchinger@gmail.com> (2026-04-30)
+# Signature files may change after initial release
+www-client/brave-browser verify-sig
+www-client/brave-browser-beta verify-sig
+www-client/brave-browser-nightly verify-sig
