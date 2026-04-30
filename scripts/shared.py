@@ -81,13 +81,13 @@ def get_ebuilds(
     return ebuilds, ebuild_dir
 
 
-def gh_get(url, auth=False, **kwargs):
+def gh_get(url, require_auth=False, **kwargs):
     headers = {"Accept": "application/vnd.github.v3+json"}
-    if auth:
-        token = os.environ.get("GITHUB_TOKEN")
-        if not token:
-            raise RuntimeError("GITHUB_TOKEN environment variable unset or empty.")
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
         headers["Authorization"] = f"token {token}"
+    if not token and require_auth:
+            raise RuntimeError("GITHUB_TOKEN environment variable unset or empty.")
 
     response = requests.get(url, headers=headers, **kwargs)
     response.raise_for_status()
@@ -121,7 +121,7 @@ def get_run_jobs(run_id):
     if not repo:
         raise RuntimeError("GITHUB_REPOSITORY environment variable unset or empty.")
 
-    response = gh_get(GH_API_ACTION_JOBS.format(repo=repo, run_id=run_id), auth=True)
+    response = gh_get(GH_API_ACTION_JOBS.format(repo=repo, run_id=run_id), require_auth=True)
     return response.json()["jobs"]
 
 
