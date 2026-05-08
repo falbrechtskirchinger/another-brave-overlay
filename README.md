@@ -57,11 +57,9 @@ Issues and Contributions
 
 If you encounter any problems or have suggestions for improvement, please open an issue on the GitHub repository: https://github.com/falbrechtskirchinger/another-brave-overlay.
 
-Contributions are welcome! You can contribute by:
+**Please do not submit pull requests at this time.**
 
-- Forking the repository on GitHub.
-- Making your changes or enhancements.
-- Submitting a pull request.
+The underlying automation is being completely rewritten. As of May 2026, I don't have a firm timeline, but I aim to have the rewrite finished before the end of the year.
 
 License
 -------
